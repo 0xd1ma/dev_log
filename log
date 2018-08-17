@@ -1,0 +1,98 @@
+*******************************************************
+
+all
+rosdep install --from-paths src/velodyne --ignore-src --rosdistro kinetic -y
+only velodyne
+rosdep install --from-paths src --ignore-src --rosdistro kinetic -y
+
+*******************************************************
+
+rosbag filter
+
+rosbag filter old_bag.bag new_bag.bag "topic == '/clock' or topic == '/scan' or topic == '/imu/data' or topic == '/nmea_sentence' or topic == '/telemetry_sigma/wheels_angle' or topic == '/telemetry_sigma/sensing/wheels_speed_esp'"
+
+https://answers.ros.org/question/191003/can-rosbag-filter-create-a-new-bag-file-with-multiple-topics-within-it/
+https://gist.github.com/ayrton04/662964298a82211a7e28
+*******************************************************
+
+Anaconda
+
+anaconda-navigator
+spyder --reset
+conda install opencv
+*******************************************************
+
+The basic check I use for odometry is to have rviz accumulate laser scans in the odometric frame, and verify visually that they're coherent.
+
+Set the Fixed Frame to odom (or whatever the name of your odometric frame is) and turn up the decay time on the laser scans (e.g., to 600 seconds). Drive the robot around, and see what happens with the accumulated laser scans. If the odometry is reasonable, you'll see a crude "map" being built. It should be obvious immediately whether there's something seriously wrong.
+
+https://answers.ros.org/question/9480/is-there-a-good-way-to-verify-my-odometry-data-is-sensible/#808
+
+*******************************************************
+
+conda update navigator-updater
+conda update anaconda-navigator
+
+запустить в консоле перед использованием
+export PATH=~/anaconda2/bin/:$PATH
+
+----
+
+
+https://stackoverflow.com/questions/23935141/how-to-copy-docker-images-from-one-host-to-another-without-via-repository
+
+
+*******************************************************
+
+----
+
+
+после обновления докера слетаю днс настройки и он не может выйти в интернет
+
+
+-----
+
+rosdep install --from-paths src --ignore-src
+
+This command would install the released binary packages of all dependencies if invoked in a workspace with only hector_quadrotor. Unfortunately this variant of the rosdep install command is not very well documented, although it is the most commonly used since catkin has been introduced, since rosdep install <package name> would only work after the workspace has been successfully built and the generated setup.sh has been sourced.
+
+
+
+*******************************************************
+
+
+бери драйвера для нвидеа из убунты
+
+---
+
+качай и устанавливай куду
+
+---
+
+Please make sure that
+ -   PATH includes /usr/local/cuda-9.2/bin
+ -   LD_LIBRARY_PATH includes /usr/local/cuda-9.2/lib64, or, add /usr/local/cuda-9.2/lib64 to /etc/ld.so.conf and run ldconfig as root
+
+To uninstall the CUDA Toolkit, run the uninstall script in /usr/local/cuda-9.2/bin
+
+Please see CUDA_Installation_Guide_Linux.pdf in /usr/local/cuda-9.2/doc/pdf for detailed information on setting up CUDA.
+
+***WARNING: Incomplete installation! This installation did not install the CUDA Driver. A driver of version at least 384.00 is required for CUDA 9.2 functionality to work.
+To install the driver using this installer, run the following command, replacing <CudaInstaller> with the name of this run file:
+    sudo <CudaInstaller>.run -silent -driver
+
+-- 
+
+смотри ПДФ от нвидеа
+
+---
+
+https://stackoverflow.com/questions/13428910/how-to-set-the-environmental-variable-ld-library-path-in-linux
+https://www.hpc.dtu.dk/?page_id=1180
+
+---
+
+https://stackoverflow.com/questions/14637979/how-to-permanently-set-path-on-linux-unix
+https://unix.stackexchange.com/questions/26047/how-to-correctly-add-a-path-to-path
+
+
