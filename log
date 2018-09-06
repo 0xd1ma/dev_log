@@ -1,4 +1,10 @@
 *******************************************************
+https://answers.ros.org/question/301134/robot_localization-result-is-unpredictable/
+
+*******************************************************
+Hi, sorry for the late reply as I was busy with something else. I just tried what you suggested but... 
+
+*******************************************************
 
 all
 rosdep install --from-paths src/velodyne --ignore-src --rosdistro kinetic -y
