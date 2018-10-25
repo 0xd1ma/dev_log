@@ -1,0 +1,33 @@
+*******************************************************
+
+
+
+*******************************************************
+
+
+*******************************************************
+The resolution and size of the local costmap (see local_costmap_params.yaml) significantly influences the performance of the optimization since each occupied costmap cell is considered as a single point-obstacle. For a huge number of obstacles, parallel planning in distinctive topologies could fail due to numerical instabilities. In that case try to increase the resolution or decrease the size until this problem is fixed or bypassed well (otherwise you could try to slightly reduce the value of h_signature_prescaler).
+
+
+*******************************************************
+rosparam set /test_optim_node/publish_feedback true
+
+!!!!
+важно. избегаем локального минимума
+
+*******************************************************
+enable the parallel planning in distinctive topologies
+
+rosparam set /test_optim_node/enable_homotopy_class_planning True
+
+
+*******************************************************
+If you experience a bad performance on your system even with the default setting, try to adjust the following parameters in order to speed-up the optimization:
+
+Decrease no_inner_iterations
+
+Decrease no_outer_iterations
+
+Increase dt_ref
+
+Decrease obstacle_poses_affected

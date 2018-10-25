@@ -1,4 +1,129 @@
 *******************************************************
+
+
+
+*******************************************************
+
+
+*******************************************************
+
+
+*******************************************************
+
+
+*******************************************************
+
+
+*******************************************************
+Using teb_local_planner with robot_localization
+
+https://answers.ros.org/question/265534/using-teb_local_planner-with-robot_localization/
+
+*******************************************************
+Difference between DWA local_planner and TEB local_planner
+
+https://answers.ros.org/question/274564/difference-between-dwa-local_planner-and-teb-local_planner/
+
+*******************************************************
+Reading from an IMU (single axis)
+
+https://answers.ros.org/question/59121/reading-from-an-imu-single-axis/
+
+*******************************************************
+
+Confused with setup for robot_localization
+https://answers.ros.org/question/300467/confused-with-setup-for-robot_localization/
+
+*******************************************************
+
+The MedianFilter and MeanFilter filters, which are used via the LaserArrayFilter, are quite useful and you could use them in place of doing your own averaging.
+
+You can take care of the noise through various statistical methods ranging from the simple (average a bunch of values over time and/or space) to the hard-but-impresses-your-boss.
+
+A simple approach that sometimes works is to calculate the centre of the range of distances in a wedge (i.e. closest + (farthest - closest)/2) and discard all values that are a certain distance away from that centre. It's kind of like a poor man's quartile filter. A more statistically accurate approach is to discard values that are a certain number of standard deviations from the mean...
+
+https://answers.ros.org/question/300094/getting-information-out-of-the-scan-topic/
+
+*******************************************************
+several source for costmap2D
+
+https://answers.ros.org/question/238665/multiple-pointcloud2-topics-for-navigation-stack-with-teb_local_planner/
+
+*******************************************************
+I am trying to get my turtlebot to localize itself automatically instead of me using the 2D Pose Estimate. Is there any way I can make that possible? I am using an RPLidar A2 sensor only.
+
+You can try the calling rosservice call /global_localization It will spread AMCL particles all around your map, so once you start moving, or calling rosservice call /no_motion_update as mentioned by @achimk, it may converge to your actual position.
+
+*******************************************************
+I'll let you know the details of our setup for working with teb_local_planner and robot_localization:
+
+We set up two instances of robot_localization. Both use inputs from wheel odometry and an IMU. One of these is the continuous ekf estimate, which has its world_frame set to odom. The other is the absolute ekf estimate, which has the world_frame set to map. The absolute ekf estimate also has GPS integrated into it, which comes from the navsat_transform_node in the robot_localization package. The continuous ekf publishes the odom -> base_link transform, and the absolute ekf publishes the map -> odom transform.
+We set up the navigation stack, using appropriate parameters for our robot. The important parameters here are the global_frame for the costmaps. The local costmap runs in odom always. The global costmap can either be odom or map. Which to choose depends on a couple things:
+The accuracy of your gps. If your GPS has a typical few-metre accuracy, and tends to jump around, your transform from map to odom will also jump around. This will make your goal move, as the goal is set in the global costmap, which uses the map frame. If you have a differential GPS or RTK-GPS, which has an accuracy of a few centimeters, small jumps in GPS data should be handled much better by the ekf node, and your map to odom transform will not jump around as much.
+The tolerance which you are trying to achieve your goal within. If you are trying to drive to within 10cm of your goal, but your GPS is jumping around by a few metres, the odom to map transform will jump around much more than the 10cm tolerance, and your robot will keep trying to drive to the new position after each transform update (not good). However, if you are trying to drive to within 30cm of the goal, with an accurate RTK-GPS, the jumping in goal position will likely be much less than the tolerance. This means the robot should be able to happily achieve the goal.
+(really still 2) If you have an accurate GPS and believe it will not cause large jumps in the map -> odom transform, choose map as the global costmap frame id. This has the benefit that your robot will always achieve the world-referenced navigation target (since map is truly world-fixed). If your GPS isn't great, choose odom as the frame for the global costmap. This means the goal will now be odom-frame-referenced. Odom is considered world-fixed, but it isn't really if you're using it for navigation with data sources that are non-absolute (like encoders and an IMU). The odom frame's position in the world will drift over time. This means the robot will likely end up in a spot that isn't quite the goal that you sent it towards. BUT it will still be able to achieve the goal, which it likely wouldn't if you ran with a 'bad' GPS and the map frame. Our GPS isn't great, so we currently use odom as the frame for global costmap, but we have some smart overhead to handle object repositioning and goal transforms. You'll have to do the same if you choose odom, as world-fixed objects will need reconciliation into the map frame (such that the objects become truly world-fixed).
+Set the following parameters for teb_local_planner:
+The odom topic is the output from the continuous ekf estimate.
+The map frame is whichever frame you use for the global costmap.
+Choose whatever other parameters you need for ackermann, as we use diff drive.
+I'd also perform the following checks:
+
+Joystick the robot around, and check that the ekf estimating nodes are working correctly, to eliminate them as the problem.
+I'd also be sure to check that your IMU is positioned correctly, according to the docs for robot_localization.
+Perform the same sanity check for the GPS, making sure that its data is being transformed correctly into the map/utm frame.
+
+https://answers.ros.org/question/265534/using-teb_local_planner-with-robot_localization/#
+
+*******************************************************
+By default the value of costmap_obstacles_behind_robot_dist is set to 1 meter, this wil cause some weird behaviour. I suggest changing the value of this parameter to something like 5 maybe 6 meters. Let me know if this works!
+
+*******************************************************
+recovery-behavior will take place to get the robot unstuck (NOTE that the default recovery behavior rotates in place). That is set by the recovery_behaviors and clearing_rotation_allowed parameters from move_base. This means that in order to avoid in-place rotations when stuck you will need a custom recovery behavior plugin in this case. 
+
+*******************************************************
+Unfortunately, we cannot restrict the optimzer's search space to positive velocities only, since our solver does not support hard-constraints. But you can penalize backwards motions by significantly increasing parameter weight_kinematics_forward_drive. Increase the value by using rqt_reconfigure until you find a satisfactory value (too large values might reduce convergence speed).
+
+Furthermore, you can reduce max_vel_x_backwards to 0 (or it is better to reduce this paramter to at least the value of parameter penalty_epsilon from a numerical point of view; the value is 0.1 by default; I am going to improve this behavior in future versions).
+
+*******************************************************
+"Rolling window" means that you do not use the costmap to represent your complete environment, but only to represent your local surroundings (e.g. 5m x 5m around your robot). The costmap will then move along with your robot and will be updated by incoming sensor data.
+
+Does that mean if rolling_window=true the costmap represent only the local surroundings centering our robot?
+
+Yes. Set to false to use it as a global map.
+*******************************************************
+
+
+
+*******************************************************
+
+
+
+*******************************************************
+
+
+
+*******************************************************
+
+
+
+*******************************************************
+
+
+
+*******************************************************
+
+
+
+*******************************************************
+
+
+
+*******************************************************
+
+source is a bash shell built-in command that executes the content of the file passed as argument, in the current shell. It has a synonym in . (period).
+
+*******************************************************
 https://answers.ros.org/question/301134/robot_localization-result-is-unpredictable/
 
 *******************************************************
